@@ -3,8 +3,12 @@ import pandas as pd
 import time
 import pickle
 from sklearn.preprocessing import StandardScaler
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app)
 
 # Load the trained model (make sure the model file is in the correct directory)
 try:
@@ -108,6 +112,6 @@ def predict():
 
 if __name__ == '__main__':
     if model:
-        app.run(debug=True)
+        app.run(host='0.0.0.0', port=5000, debug=True)  # Allow external connections
     else:
         print("Exiting: Model not loaded.")
