@@ -35,6 +35,7 @@ def home():
 
 
 @app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     try:
         total_start_time = time.time()  # Start time for the entire process
@@ -51,15 +52,20 @@ def predict():
         except Exception as e:
             return jsonify({'error': f'Error reading the CSV file: {str(e)}'}), 400
         
-        # Check the number of columns
-        expected_columns = 13  # Adjust this based on the number of features
+        # Expected number of columns (features)
+        expected_columns = 13  # Adjust this to match your model's requirements
+        
+        # Automatically handle extra columns by selecting the first expected_columns
+        if data.shape[1] > expected_columns:
+            logging.warning(f"Uploaded data has {data.shape[1]} columns, trimming to {expected_columns}.")
+            data = data.iloc[:, :expected_columns]
 
+        # Validate if the data now has the correct number of columns
         if data.shape[1] != expected_columns:
             raise ValueError(f"Feature shape mismatch, expected: {expected_columns}, got: {data.shape[1]}")
 
-        # Split the data into X (features) and y (target)
-        X = data.iloc[:, :-1]  # All columns except the last one (features)
-        y = data.iloc[:, -1]   # The last column (target)
+        # Split the data into X (features)
+        X = data.values
 
         # Initialize and fit the StandardScaler on the incoming data
         try:
@@ -68,10 +74,9 @@ def predict():
         except Exception as e:
             return jsonify({'error': f'Error scaling the data: {str(e)}'}), 500
 
-        # Model prediction using X (features only)
+        # Model prediction
         try:
             predictions = model.predict(scaled_features)
-            time.sleep(0.1)
         except Exception as e:
             return jsonify({'error': f'Error making predictions: {str(e)}'}), 500
 
@@ -86,6 +91,7 @@ def predict():
         # Log the exception and provide detailed feedback
         logging.error(f"Error in /predict: {str(e)}")
         return jsonify({'error': f"Internal Server Error: {str(e)}"}), 500
+
 
 
 if __name__ == '__main__':
