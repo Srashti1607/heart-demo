@@ -25,14 +25,8 @@ def log_request_info():
     print(f"Request method: {request.method}")
     print(f"Request URL: {request.url}")
 
-@app.route('/')
-def home():
-    """Home route to verify the app is running."""
-    return "Application running", 200
-
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Endpoint to handle predictions."""
     try:
         total_start_time = time.time()  # Start time for the entire process
 
@@ -47,6 +41,7 @@ def predict():
         try:
             data = pd.read_csv(file)
         except Exception as e:
+            print(f"Error reading the CSV file: {str(e)}")  # Log the error
             return jsonify({'error': f'Error reading the CSV file: {str(e)}'}), 400
 
         # Log the columns and shape of the incoming data
@@ -61,6 +56,7 @@ def predict():
 
         # Ensure the data has the expected number of columns
         if data.shape[1] != expected_columns:
+            print(f"Feature shape mismatch, expected: {expected_columns}, got: {data.shape[1]}")  # Log this error
             return jsonify({'error': f'Feature shape mismatch, expected: {expected_columns}, got: {data.shape[1]}'}), 400
 
         # Initialize the StandardScaler
@@ -70,6 +66,7 @@ def predict():
         try:
             scaled_data = scaler.fit_transform(data)
         except Exception as e:
+            print(f"Error scaling the data: {str(e)}")  # Log the error
             return jsonify({'error': f'Error scaling the data: {str(e)}'}), 500
 
         predictions = []
@@ -89,16 +86,13 @@ def predict():
                 time.sleep(0.1)
 
             except Exception as e:
+                print(f"Error predicting row {row_index}: {str(e)}")  # Log the error
                 return jsonify({'error': f'Error predicting row {row_index}: {str(e)}'}), 500
 
             # Move to the next row
             row_index += 1
 
         total_processing_time = time.time() - total_start_time  # Total time for all predictions
-
-        # Log the predictions and processing time
-        print(f"Predictions: {predictions}")
-        print(f"Total processing time: {total_processing_time} seconds")
 
         # Return predictions and time information
         return jsonify({
@@ -107,11 +101,5 @@ def predict():
         }), 200
 
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")  # Log the general error
         return jsonify({'error': f'Internal Server Error: {str(e)}'}), 500
-
-if __name__ == '__main__':
-    if model:
-        app.run(host='0.0.0.0', port=5000, debug=True)  # Allow external connections
-    else:
-        print("Exiting: Model not loaded.")
