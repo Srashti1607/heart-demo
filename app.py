@@ -44,20 +44,36 @@ def predict():
             raise ValueError("No file provided")
 
         file = request.files['file']
-        data = pd.read_csv(file)
-
+        
+        # Load the file into a Pandas DataFrame
+        try:
+            data = pd.read_csv(file)
+        except Exception as e:
+            return jsonify({'error': f'Error reading the CSV file: {str(e)}'}), 400
+        
         # Check the number of columns
-        expected_columns = 13
+        expected_columns = 13  # Adjust this based on the number of features
+
         if data.shape[1] != expected_columns:
             raise ValueError(f"Feature shape mismatch, expected: {expected_columns}, got: {data.shape[1]}")
 
-        # Scale the data
-        scaler = StandardScaler()
-        scaled_data = scaler.fit_transform(data)
+        # Split the data into X (features) and y (target)
+        X = data.iloc[:, :-1]  # All columns except the last one (features)
+        y = data.iloc[:, -1]   # The last column (target)
 
-        # Model prediction
-        predictions = model.predict(scaled_data)
-        time.sleep(0.1)
+        # Initialize and fit the StandardScaler on the incoming data
+        try:
+            scaler = StandardScaler()
+            scaled_features = scaler.fit_transform(X)  # Fit the scaler and transform features
+        except Exception as e:
+            return jsonify({'error': f'Error scaling the data: {str(e)}'}), 500
+
+        # Model prediction using X (features only)
+        try:
+            predictions = model.predict(scaled_features)
+            time.sleep(0.1)
+        except Exception as e:
+            return jsonify({'error': f'Error making predictions: {str(e)}'}), 500
 
         total_processing_time = time.time() - total_start_time
 
